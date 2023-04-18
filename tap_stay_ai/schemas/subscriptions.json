@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "subscriptionId": {
+      "type": "string"
+    },
+    "customerId": {
+      "type": "integer"
+    },
+    "emailAddress": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nextBillingDate": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "pausedUntil": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "churnedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cancelledAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "cancellationReason": {
+      "type": "string"
+    },
+    "price": {
+      "type": "integer"
+    },
+    "deliveryPrice": {
+      "type": "integer"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    },
+    "orderIntervalFrequency": {
+      "type": "integer"
+    },
+    "orderIntervalUnit": {
+      "type": "string"
+    },
+    "lineItems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lineId": {
+            "type": "string"
+          },
+          "shopifyProductId": {
+            "type": "string"
+          },
+          "shopifyVariantId": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "unitPrice": {
+            "type": "integer"
+          },
+          "subtotalPrice": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

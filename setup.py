@@ -19,7 +19,7 @@ setup(
     tap-stay-ai=tap_stay_ai:main
     """,
     packages=["tap_stay_ai"],
-    package_data = {
+    package_data={
         "schemas": ["tap_stay_ai/schemas/*.json"]
     },
     include_package_data=True,

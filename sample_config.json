@@ -1,5 +1,4 @@
 {
-  "username": "my_username",
-  "password": "my_password",
+  "api_key": "",
   "start_date": "2017-01-01T00:00:00Z"
 }

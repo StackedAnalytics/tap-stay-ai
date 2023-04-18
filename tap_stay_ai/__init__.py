@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
+import logging
 import os
 import json
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List
+
+import requests
 import singer
 from singer import utils, metadata
 from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
 
 
-REQUIRED_CONFIG_KEYS = ["start_date", "username", "password"]
+REQUIRED_CONFIG_KEYS = ["start_date", "api_key"]
+STAY_API_URL = 'https://api.retextion.com/api/v2/subscriptions'
 LOGGER = singer.get_logger()
 
 
@@ -30,9 +36,20 @@ def discover():
     raw_schemas = load_schemas()
     streams = []
     for stream_id, schema in raw_schemas.items():
-        # TODO: populate any metadata and stream's key properties here..
         stream_metadata = []
         key_properties = []
+        replication_key = None
+        if stream_id == 'subscriptions':
+            key_properties = ['id']
+            stream_metadata = [
+                {
+                    "metadata": {
+                        "selected": True
+                    },
+                    "breadcrumb": []
+                }
+            ]
+            replication_key = 'updatedAt'
         streams.append(
             CatalogEntry(
                 tap_stream_id=stream_id,
@@ -40,7 +57,7 @@ def discover():
                 schema=schema,
                 key_properties=key_properties,
                 metadata=stream_metadata,
-                replication_key=None,
+                replication_key=replication_key,
                 is_view=None,
                 database=None,
                 table=None,
@@ -54,26 +71,49 @@ def discover():
 
 def sync(config, state, catalog):
     """ Sync data from tap source """
+
+    def get_subscriptions(minimum_updated_at_datetime: datetime = None,
+                          maximum_updated_at_datetime: datetime = None) -> List[Dict]:
+        # TODO: Handle pagination
+        subscriptions = []
+        params = {}
+        if minimum_updated_at_datetime:
+            params['updatedAtMin'] = int(minimum_updated_at_datetime.timestamp() * 1000)
+        if maximum_updated_at_datetime:
+            params['updatedAtMax'] = int(maximum_updated_at_datetime.timestamp() * 1000)
+
+        headers = {
+            'X-RETEXTION-ACCESS-TOKEN': config['api_key']
+        }
+
+        response = requests.get(STAY_API_URL, headers=headers, params=params)
+        response_json = response.json()
+        subscriptions.extend(response_json['data'])
+        return subscriptions
+
     # Loop over selected streams in catalog
     for stream in catalog.get_selected_streams(state):
         LOGGER.info("Syncing stream:" + stream.tap_stream_id)
-
         bookmark_column = stream.replication_key
-        is_sorted = True  # TODO: indicate whether data is sorted ascending on bookmark value
+        is_sorted = False
 
         singer.write_schema(
             stream_name=stream.tap_stream_id,
-            schema=stream.schema,
+            schema=stream.schema.to_dict(),
             key_properties=stream.key_properties,
         )
 
-        # TODO: delete and replace this inline function with your own data retrieval process:
-        tap_data = lambda: [{"id": x, "name": "row${x}"} for x in range(1000)]
+        if config['start_date']:
+            start_date = datetime.strptime(config['start_date'], '%Y-%m-%dT%H:%M:%SZ')
+        else:
+            start_date = datetime.now(tz=timezone.utc) - timedelta(hours=1)
+
+        data = []
+        if stream.tap_stream_id == 'subscriptions':
+            data = get_subscriptions(start_date)
 
         max_bookmark = None
-        for row in tap_data():
-            # TODO: place type conversions or transformations here
-
+        for row in data:
             # write one or more rows to the stream:
             singer.write_records(stream.tap_stream_id, [row])
             if bookmark_column:
@@ -82,7 +122,10 @@ def sync(config, state, catalog):
                     singer.write_state({stream.tap_stream_id: row[bookmark_column]})
                 else:
                     # if data unsorted, save max value until end of writes
-                    max_bookmark = max(max_bookmark, row[bookmark_column])
+                    if max_bookmark is None:
+                        max_bookmark = row[bookmark_column]
+                    else:
+                        max_bookmark = max(max_bookmark, row[bookmark_column])
         if bookmark_column and not is_sorted:
             singer.write_state({stream.tap_stream_id: max_bookmark})
     return
