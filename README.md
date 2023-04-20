@@ -11,7 +11,3 @@ This tap:
   - Subscriptions
 - Outputs the schema for each resource
 - Incrementally pulls data based on the input state
-
----
-
-Copyright &copy; 2023 Ryan Gahart
