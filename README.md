@@ -11,3 +11,31 @@ This tap:
   - Subscriptions
 - Outputs the schema for each resource
 - Incrementally pulls data based on the input state
+
+## Getting Started
+1. Copy config file.
+   ```shell
+   $ cp sample_config.json config.json
+   ```
+2. Edit properties in config file.
+3. Create python venv.
+   ```shell
+   $ python -m venv venv
+   ```
+4. Activate venv.
+   ```shell
+   $ source venv/bin/activate
+   ```
+5. Install dependencies.
+   ```shell
+   $ pip install -r requirements
+   ```
+6. Install tap locally.
+   ```shell
+   $ pip install .
+   ```
+
+## Using the tap
+```shell
+$ venv/bin/tap-stay-ai --config config.json
+```
