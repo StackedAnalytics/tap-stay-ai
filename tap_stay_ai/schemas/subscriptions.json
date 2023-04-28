@@ -9,7 +9,7 @@
       "type": "string"
     },
     "customerId": {
-      "type": "integer"
+      "type": "string"
     },
     "emailAddress": {
       "type": "string"
@@ -27,22 +27,26 @@
       "format": "date-time"
     },
     "pausedUntil": {
-      "type": "string",
+      "type": ["null", "string"],
       "format": "date-time"
     },
     "churnedAt": {
-      "type": "string",
+      "type": ["null", "string"],
       "format": "date-time"
     },
     "cancelledAt": {
-      "type": "string",
+      "type": ["null", "string"],
       "format": "date-time"
     },
     "cancellationReason": {
-      "type": "string"
+      "type": ["null", "string"]
+    },
+    "lastChargeDate": {
+      "type": ["null", "string"],
+      "format": "date-time"
     },
     "price": {
-      "type": "integer"
+      "type": ["integer", "number"]
     },
     "deliveryPrice": {
       "type": "integer"
@@ -77,10 +81,10 @@
             "type": "integer"
           },
           "unitPrice": {
-            "type": "integer"
+            "type": ["integer", "number"]
           },
           "subtotalPrice": {
-            "type": "integer"
+            "type": ["integer", "number"]
           }
         }
       }
