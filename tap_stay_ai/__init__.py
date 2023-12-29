@@ -4,6 +4,7 @@ import os
 import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+import time
 
 import requests
 import singer
@@ -71,7 +72,7 @@ def discover():
     return Catalog(streams)
 
 
-def query_stay_ai_subscriptions(access_token: str, page: int = 1, page_size: int = 50, updated_at_min: Optional[int] = None, updated_at_max: Optional[int] = None):
+def query_stay_ai_subscriptions(access_token: str, page: int = 1, page_size: int = 100, updated_at_min: Optional[int] = None, updated_at_max: Optional[int] = None, schema: Optional[dict] =None):
     logging.info(f'Fetching subscriptions: page_size={page_size}, page={page}')
     params = {
         'pageSize': page_size,
@@ -88,13 +89,17 @@ def query_stay_ai_subscriptions(access_token: str, page: int = 1, page_size: int
 
     response = requests.get(STAY_API_URL+'/subscriptions', headers=headers, params=params)
     response_json = response.json()
+    time.sleep(1)
+    columns_to_keep = list(schema['properties'].keys())
+    subset_list = [{key: d[key] for key in columns_to_keep if key in d} for d in response_json.get('data')]
     logging.info(f'Fetched subscriptions: total_in_page={len(response_json["data"])}, total={response_json["total"]}')
-    return response_json['data']
+    return subset_list
 
 
 def subscriptions_generator(access_token: str,
                             minimum_updated_at_datetime: datetime = None,
-                            maximum_updated_at_datetime: datetime = None):
+                            maximum_updated_at_datetime: datetime = None,
+                            schema: dict = None):
     page = 1
     page_size = 50
     while True:
@@ -102,7 +107,8 @@ def subscriptions_generator(access_token: str,
             access_token=access_token,
             page=page,
             updated_at_min=int(minimum_updated_at_datetime.timestamp() * 1000) if minimum_updated_at_datetime else None,
-            updated_at_max=int(maximum_updated_at_datetime.timestamp() * 1000) if maximum_updated_at_datetime else None
+            updated_at_max=int(maximum_updated_at_datetime.timestamp() * 1000) if maximum_updated_at_datetime else None,
+            schema=schema
         )
         yielded_subscriptions = 0
         for subscription in subscriptions:
@@ -143,7 +149,8 @@ def sync(config, state, catalog):
             generator = subscriptions_generator(
                 access_token=config['access_token'],
                 minimum_updated_at_datetime=min_updated_at_datetime,
-                maximum_updated_at_datetime=max_updated_at_datetime
+                maximum_updated_at_datetime=max_updated_at_datetime,
+                schema=stream.schema.to_dict()
             )
 
         max_bookmark = None
